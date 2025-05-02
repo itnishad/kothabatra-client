@@ -1,4 +1,9 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import {
+  createFileRoute,
+  Link,
+  redirect,
+  useRouter,
+} from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -12,16 +17,73 @@ import {
 import { Label } from '@/components/ui/label';
 import { UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
+import { useState } from 'react';
+import { useAuthStore } from '@/store/authStore';
 
 export const Route = createFileRoute('/signup')({
   component: RouteComponent,
+  beforeLoad: () => {
+    const isAuthenticated = useAuthStore.getState().isAuthenticated;
+    console.log(isAuthenticated);
+    if (isAuthenticated) {
+      throw redirect({ to: '/about' });
+    }
+  },
 });
 
+interface FormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
+const initFormData = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+};
+
 function RouteComponent() {
-  const handleSubmit = (e: React.FormEvent) => {
+  const router = useRouter();
+  const [formData, setFormData] = useState<FormData>(initFormData);
+  const register = useAuthStore((state) => state.register);
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success('Account created successfully! Redirecting...');
-    // In a real app, you would register with a backend here
+    if (
+      !formData.firstName &&
+      !formData.email &&
+      !formData.password &&
+      !formData.confirmPassword
+    ) {
+      toast.error('Some field is empty.');
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Password not match');
+    }
+
+    try {
+      await register(formData);
+      router.navigate({ to: '/about' });
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message || 'Login Failed');
+      } else {
+        toast.error('There was an server side error');
+      }
+    }
+  };
+
+  const handleFormData = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
   };
 
   return (
@@ -61,6 +123,9 @@ function RouteComponent() {
                   <Input
                     id="first_name"
                     type="text"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleFormData}
                     placeholder="John"
                     required
                   />
@@ -70,6 +135,9 @@ function RouteComponent() {
                   <Input
                     id="last_name"
                     type="text"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleFormData}
                     placeholder="Doe"
                     required
                   />
@@ -81,6 +149,9 @@ function RouteComponent() {
                 <Input
                   id="email"
                   type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleFormData}
                   placeholder="you@example.com"
                   required
                 />
@@ -91,6 +162,9 @@ function RouteComponent() {
                 <Input
                   id="password"
                   type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleFormData}
                   placeholder="••••••••"
                   required
                 />
@@ -105,6 +179,9 @@ function RouteComponent() {
                 <Input
                   id="confirm_password"
                   type="password"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleFormData}
                   placeholder="••••••••"
                   required
                 />

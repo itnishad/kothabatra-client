@@ -1,4 +1,9 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import {
+  createFileRoute,
+  Link,
+  redirect,
+  useRouter,
+} from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -12,16 +17,58 @@ import {
 import { Label } from '@/components/ui/label';
 import { LogIn } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/store/authStore';
+import { useState } from 'react';
 
 export const Route = createFileRoute('/login')({
   component: RouteComponent,
+  beforeLoad: () => {
+    const isAuthenticated = useAuthStore.getState().isAuthenticated;
+    console.log(isAuthenticated);
+    if (isAuthenticated) {
+      throw redirect({ to: '/about' });
+    }
+  },
 });
 
+interface FormData {
+  email: string;
+  password: string;
+}
+
 function RouteComponent() {
-  const handleSubmit = (e: React.FormEvent) => {
+  const router = useRouter();
+  const [formData, setFormData] = useState<FormData>({
+    email: '',
+    password: '',
+  });
+  const login = useAuthStore((state) => state.login);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success('Login successful! Redirecting...');
-    // In a real app, you would authenticate with a backend here
+
+    if (!formData.email && !formData.password) {
+      toast.error('Some field is empty.');
+    }
+
+    try {
+      await login(formData.email, formData.password);
+      router.navigate({ to: '/about' });
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message || 'Login Failed');
+      } else {
+        toast.error('There was an server side error');
+      }
+    }
+  };
+
+  const handleFormData = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
   };
 
   return (
@@ -60,6 +107,9 @@ function RouteComponent() {
                 <Input
                   id="email"
                   type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleFormData}
                   placeholder="you@example.com"
                   required
                 />
@@ -78,6 +128,9 @@ function RouteComponent() {
                 <Input
                   id="password"
                   type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleFormData}
                   placeholder="••••••••"
                   required
                 />
