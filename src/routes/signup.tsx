@@ -19,6 +19,7 @@ import { UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
+import { AxiosError } from 'axios';
 
 export const Route = createFileRoute('/signup')({
   component: RouteComponent,
@@ -60,18 +61,22 @@ function RouteComponent() {
       !formData.confirmPassword
     ) {
       toast.error('Some field is empty.');
+      return;
     }
 
     if (formData.password !== formData.confirmPassword) {
       toast.error('Password not match');
+      return;
     }
 
     try {
       await register(formData);
       router.navigate({ to: '/about' });
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message || 'Login Failed');
+    } catch (err) {
+      const error = err as AxiosError<{ message: string }>;
+      const message = error.response?.data.message;
+      if (message) {
+        toast.error(message);
       } else {
         toast.error('There was an server side error');
       }

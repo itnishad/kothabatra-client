@@ -1,12 +1,8 @@
 import { create } from 'zustand';
-import axios, { AxiosError } from 'axios';
+import { AxiosError } from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import { RegisterData } from '@/types';
-
-export const api = axios.create({
-  baseURL: 'http://localhost:8000/v1', // Replace with your API URL
-  withCredentials: true, // Important for cookies
-});
+import { api } from '@/lib/axios';
 
 type User = {
   id: string;
@@ -22,7 +18,7 @@ type AuthStore = {
   initAuth: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: (skipServer?: boolean) => Promise<void>;
   generateAccessToken: () => Promise<void>;
   isTokenExpired: (token: string) => boolean;
   getValidAccessToken: () => Promise<string | void | null>;
@@ -146,22 +142,24 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       throw error;
     }
   },
-  logout: async () => {
+  logout: async (skipServer) => {
     try {
-      // await api.post('/auth/logout');
+      if (!skipServer) {
+        await api.post('/auth/logout');
+      }
       set({ user: null, accessToken: '', isAuthenticated: false });
       saveUserData(null);
     } catch (error) {
       console.log(error);
-      throw error;
+      // throw error;
     }
   },
   generateAccessToken: async () => {
     try {
-      const response = await api.post('/auth/token');
-      const { accessToken } = response.data;
-      set({ accessToken });
-      return accessToken;
+      const response = await api.post('/auth/access-token');
+      const { token } = response.data;
+      set({ accessToken: token });
+      return token;
     } catch (err) {
       const error = err as AxiosError;
       if (error.response?.status === 401) {

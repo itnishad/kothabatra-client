@@ -19,6 +19,7 @@ import { LogIn } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/authStore';
 import { useState } from 'react';
+import { AxiosError } from 'axios';
 
 export const Route = createFileRoute('/login')({
   component: RouteComponent,
@@ -54,9 +55,15 @@ function RouteComponent() {
     try {
       await login(formData.email, formData.password);
       router.navigate({ to: '/about' });
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message || 'Login Failed');
+    } catch (err) {
+      const error = err as AxiosError<{
+        error: string;
+        message: string;
+        statusCode: number;
+      }>;
+      const message = error.response?.data.message;
+      if (message) {
+        toast.error(message);
       } else {
         toast.error('There was an server side error');
       }
