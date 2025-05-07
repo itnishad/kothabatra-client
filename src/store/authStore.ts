@@ -162,9 +162,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       return token;
     } catch (err) {
       const error = err as AxiosError;
-      if (error.response?.status === 401) {
-        get().logout();
-      }
       throw error;
     }
   },
@@ -181,7 +178,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
   getValidAccessToken: async () => {
     const { generateAccessToken } = get();
-
     // Try to get new access token using the HTTP-only refresh token cookie
     try {
       return await generateAccessToken();

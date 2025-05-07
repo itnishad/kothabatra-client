@@ -38,11 +38,16 @@ api.interceptors.response.use(
       _retry?: boolean;
     };
     console.log(error.response?.data.message);
+    console.log(
+      'ISToken',
+      !error.response?.data.message.includes('Refresh Token')
+    );
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
       !error.response?.data.message.includes('Refresh Token')
     ) {
+      console.log('alwase call');
       originalRequest._retry = true;
       try {
         const getValidateAccessToken =
@@ -54,7 +59,7 @@ api.interceptors.response.use(
           return api(originalRequest);
         } else {
           // If we can't get a valid token, redirect to login
-          useAuthStore.getState().logout();
+          useAuthStore.getState().logout(true);
           window.location.href = '/login';
         }
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
