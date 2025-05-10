@@ -10,11 +10,12 @@
 
 // Import Routes
 
-import { Route as rootRoute } from './routes/__root';
-import { Route as SignupImport } from './routes/signup';
-import { Route as LoginImport } from './routes/login';
-import { Route as AboutImport } from './routes/about';
-import { Route as IndexImport } from './routes/index';
+import { Route as rootRoute } from './routes/__root'
+import { Route as SignupImport } from './routes/signup'
+import { Route as LoginImport } from './routes/login'
+import { Route as ChatImport } from './routes/chat'
+import { Route as AboutImport } from './routes/about'
+import { Route as IndexImport } from './routes/index'
 
 // Create/Update Routes
 
@@ -22,111 +23,129 @@ const SignupRoute = SignupImport.update({
   id: '/signup',
   path: '/signup',
   getParentRoute: () => rootRoute,
-} as any);
+} as any)
 
 const LoginRoute = LoginImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => rootRoute,
-} as any);
+} as any)
+
+const ChatRoute = ChatImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const AboutRoute = AboutImport.update({
   id: '/about',
   path: '/about',
   getParentRoute: () => rootRoute,
-} as any);
+} as any)
 
 const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRoute,
-} as any);
+} as any)
 
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/': {
-      id: '/';
-      path: '/';
-      fullPath: '/';
-      preLoaderRoute: typeof IndexImport;
-      parentRoute: typeof rootRoute;
-    };
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexImport
+      parentRoute: typeof rootRoute
+    }
     '/about': {
-      id: '/about';
-      path: '/about';
-      fullPath: '/about';
-      preLoaderRoute: typeof AboutImport;
-      parentRoute: typeof rootRoute;
-    };
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutImport
+      parentRoute: typeof rootRoute
+    }
+    '/chat': {
+      id: '/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof ChatImport
+      parentRoute: typeof rootRoute
+    }
     '/login': {
-      id: '/login';
-      path: '/login';
-      fullPath: '/login';
-      preLoaderRoute: typeof LoginImport;
-      parentRoute: typeof rootRoute;
-    };
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginImport
+      parentRoute: typeof rootRoute
+    }
     '/signup': {
-      id: '/signup';
-      path: '/signup';
-      fullPath: '/signup';
-      preLoaderRoute: typeof SignupImport;
-      parentRoute: typeof rootRoute;
-    };
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
 // Create and export the route tree
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute;
-  '/about': typeof AboutRoute;
-  '/login': typeof LoginRoute;
-  '/signup': typeof SignupRoute;
+  '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/chat': typeof ChatRoute
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
 }
 
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute;
-  '/about': typeof AboutRoute;
-  '/login': typeof LoginRoute;
-  '/signup': typeof SignupRoute;
+  '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/chat': typeof ChatRoute
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
 }
 
 export interface FileRoutesById {
-  __root__: typeof rootRoute;
-  '/': typeof IndexRoute;
-  '/about': typeof AboutRoute;
-  '/login': typeof LoginRoute;
-  '/signup': typeof SignupRoute;
+  __root__: typeof rootRoute
+  '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/chat': typeof ChatRoute
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
 }
 
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: '/' | '/about' | '/login' | '/signup';
-  fileRoutesByTo: FileRoutesByTo;
-  to: '/' | '/about' | '/login' | '/signup';
-  id: '__root__' | '/' | '/about' | '/login' | '/signup';
-  fileRoutesById: FileRoutesById;
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths: '/' | '/about' | '/chat' | '/login' | '/signup'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/about' | '/chat' | '/login' | '/signup'
+  id: '__root__' | '/' | '/about' | '/chat' | '/login' | '/signup'
+  fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  AboutRoute: typeof AboutRoute;
-  LoginRoute: typeof LoginRoute;
-  SignupRoute: typeof SignupRoute;
+  IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
+  ChatRoute: typeof ChatRoute
+  LoginRoute: typeof LoginRoute
+  SignupRoute: typeof SignupRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  ChatRoute: ChatRoute,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
-};
+}
 
 export const routeTree = rootRoute
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()
 
 /* ROUTE_MANIFEST_START
 {
@@ -136,6 +155,7 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/about",
+        "/chat",
         "/login",
         "/signup"
       ]
@@ -145,6 +165,9 @@ export const routeTree = rootRoute
     },
     "/about": {
       "filePath": "about.tsx"
+    },
+    "/chat": {
+      "filePath": "chat.tsx"
     },
     "/login": {
       "filePath": "login.tsx"

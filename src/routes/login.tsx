@@ -54,7 +54,7 @@ function RouteComponent() {
 
     try {
       await login(formData.email, formData.password);
-      router.navigate({ to: '/about' });
+      router.navigate({ to: '/chat' });
     } catch (err) {
       const error = err as AxiosError<{
         error: string;
