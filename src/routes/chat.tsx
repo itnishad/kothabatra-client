@@ -3,6 +3,8 @@ import { ConversationArea } from '@/components/chat/ConversationArea';
 import { UsersList } from '@/components/chat/UsersList';
 import { useAuthStore } from '@/store/authStore';
 import { createFileRoute, redirect } from '@tanstack/react-router';
+import { initSocket } from '@/config/socket';
+import { useEffect } from 'react';
 
 export const Route = createFileRoute('/chat')({
   component: RouteComponent,
@@ -16,6 +18,11 @@ export const Route = createFileRoute('/chat')({
 });
 
 function RouteComponent() {
+  useEffect(() => {
+    const accessToken = useAuthStore.getState().accessToken;
+    console.log({ accessToken });
+    initSocket(accessToken);
+  }, []);
   return (
     <div className="h-screen flex flex-col">
       <ChatHeader />

@@ -52,13 +52,12 @@ const saveUserData = (user: User | null) => {
 const checkAuthentication = async () => {
   try {
     const response = await api.get('/auth/me');
-    saveUserData(response.data.user);
+    // saveUserData(response.data.user);
     return {
       user: response.data.user,
       isAuthenticated: true,
     };
-  } catch (error) {
-    console.log(error);
+  } catch {
     return {
       user: null,
       isAuthenticated: false,
@@ -77,14 +76,23 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   initAuth: async () => {
     set({ isLoading: true });
     try {
-      const authCheck = await checkAuthentication();
+      const { accessToken, getValidAccessToken } = get();
+      if (accessToken) return;
+      const token = await getValidAccessToken();
+      if (!token) {
+        set({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+        });
+      }
+      const user = await checkAuthentication();
       set({
-        user: authCheck.user,
-        isAuthenticated: authCheck.isAuthenticated,
+        user: user.user,
+        isAuthenticated: user.isAuthenticated,
         isLoading: false,
       });
-    } catch (error) {
-      console.log(error);
+    } catch {
       set({
         user: null,
         isAuthenticated: false,

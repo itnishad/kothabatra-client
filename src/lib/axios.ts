@@ -17,8 +17,8 @@ api.interceptors.request.use(async (config) => {
   if (
     config.url?.includes('/auth/login') ||
     config.url?.includes('/auth/register') ||
-    config.url?.includes('/auth/access-token') ||
-    config.url?.includes('/auth/me')
+    config.url?.includes('/auth/access-token')
+    // config.url?.includes('/auth/me')
   ) {
     return config;
   }
@@ -37,17 +37,11 @@ api.interceptors.response.use(
     const originalRequest = error.config as AxiosRequestConfig & {
       _retry?: boolean;
     };
-    console.log(error.response?.data.message);
-    console.log(
-      'ISToken',
-      !error.response?.data.message.includes('Refresh Token')
-    );
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
       !error.response?.data.message.includes('Refresh Token')
     ) {
-      console.log('alwase call');
       originalRequest._retry = true;
       try {
         const getValidateAccessToken =
@@ -63,9 +57,8 @@ api.interceptors.response.use(
           window.location.href = '/login';
         }
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (refreshError) {
+      } catch {
         // If refresh fails, redirect to login
-        console.log(refreshError);
         useAuthStore.getState().logout(true);
         window.location.href = '/login';
       }
