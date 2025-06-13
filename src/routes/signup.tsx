@@ -23,11 +23,9 @@ import { AxiosError } from 'axios';
 
 export const Route = createFileRoute('/signup')({
   component: RouteComponent,
-  beforeLoad: () => {
-    const isAuthenticated = useAuthStore.getState().isAuthenticated;
-    console.log(isAuthenticated);
-    if (isAuthenticated) {
-      throw redirect({ to: '/about' });
+  beforeLoad: ({ context }) => {
+    if (context?.user) {
+      throw redirect({ to: '/chat' });
     }
   },
 });
@@ -70,7 +68,10 @@ function RouteComponent() {
     }
 
     try {
-      await register(formData);
+      const user = await register(formData);
+      router.update({
+        context: { user },
+      });
       router.navigate({ to: '/about' });
     } catch (err) {
       const error = err as AxiosError<{ message: string }>;
