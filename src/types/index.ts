@@ -6,3 +6,16 @@ export interface User {
   name: string;
   online: string;
 }
+
+export type Message = {
+  id: string;
+  text: string;
+  owner: 'me' | 'other';
+  sender: {
+    id: string
+  },
+  reciever: {
+    id: string
+  }
+  time: string;
+};

@@ -4,32 +4,38 @@ import { User } from '@/types';
 
 
 type UserStore = {
-  customers: User[];
+  userList: User[];
+  selectedUser: User | null;
   addUser: (customer: User) => void;
   updateUser: (id: string, updated: Partial<User>) => void;
   deleteUser: (id: string) => void;
   setUsers: (customers: User[]) => void;
+  setSelectedUser: (user: User) => void
 };
 
-export const useCustomerStore = create<UserStore>((set) => ({
-  customers: [],
-
-  setUsers: (customers) => set({ customers }),
+export const useUsersStore = create<UserStore>((set) => ({
+  userList: [],
+  selectedUser: null,
+  setUsers: (customers) => set({ userList: customers }),
 
   addUser: (customer) =>
     set((state) => ({
-      customers: [...state.customers, customer],
+      userList: [...state.userList, customer],
     })),
 
   updateUser: (id, updated) =>
     set((state) => ({
-      customers: state.customers.map((customer) =>
+      userList: state.userList.map((customer) =>
         customer.id === id ? { ...customer, ...updated } : customer
       ),
     })),
 
   deleteUser: (id) =>
     set((state) => ({
-      customers: state.customers.filter((customer) => customer.id !== id),
+      userList: state.userList.filter((customer) => customer.id !== id),
+    })),
+    
+    setSelectedUser: (user: User) => set(() => ({
+      selectedUser: user,
     })),
 }));
