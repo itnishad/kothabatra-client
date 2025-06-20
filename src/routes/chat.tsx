@@ -4,9 +4,10 @@ import { UsersList } from '@/components/chat/UsersList';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { socket } from '@/config/socket';
 import { useEffect } from 'react';
-import { User } from '@/types';
 import { getActiveUsers } from '@/services';
 import { useUsersStore } from '@/store/usersStore';
+import { useMessageStore } from '@/store/messageStore';
+import { Message } from '@/types';
 
 export const Route = createFileRoute('/chat')({
   component: RouteComponent,
@@ -21,7 +22,9 @@ export const Route = createFileRoute('/chat')({
 });
 
 function RouteComponent() {
-  const {setUsers, addUser, deleteUser} = useUsersStore()
+  const {userList, selectedUser, setUsers} = useUsersStore()
+  const addMessage = useMessageStore((state)=> state.addMessage)
+  
   useEffect(()=>{
     const loadActiveUser = async ()=>{
       const data = await getActiveUsers();
@@ -31,17 +34,18 @@ function RouteComponent() {
   },[])
 
   useEffect(()=>{
-    const handleJoinUser = (user: User) => {
-      addUser(user)
+    const handleRecieveMessage = async (message: Message) =>{
+      console.log(message)
+      const userIds = userList.map(user => user.id)
+      console.log(userIds.includes(message.sender.id))
+      // if(userIds.includes(message.sender.id)){
+      // }
+      addMessage(message.sender.id, message)
     }
-    const handleLeaveUser = (user: Pick<User, 'id' | 'email'>) => {
-      deleteUser(user.id)
-    }
-    socket.on('join-user', handleJoinUser);
-    socket.on('leave-user', handleLeaveUser)
+    socket.on('recieve-message', handleRecieveMessage)
+
     return ()=>{
-      socket.removeListener('join-user', handleJoinUser)
-      socket.removeListener('leave-user', handleLeaveUser)
+      socket.removeListener('recieve-message', handleRecieveMessage)
     }
   },[])
 
@@ -50,7 +54,7 @@ function RouteComponent() {
       <ChatHeader />
       <div className="flex flex-1 overflow-hidden">
         <UsersList />
-        <ConversationArea />
+        {selectedUser && <ConversationArea selectedUser={selectedUser}/>}
       </div>
     </div>
   );

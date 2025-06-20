@@ -1,71 +1,40 @@
 import React, { useState } from 'react';
+import { Paperclip, Send, Mic, Phone, Video } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Paperclip, Send, Mic, Phone, Video } from 'lucide-react';
+import { useMessageStore } from '@/store/messageStore';
+import { useAuthStore } from '@/store/authStore';
+import { Message, User } from '@/types';
+import { socket } from '@/config/socket';
 
-type Message = {
-  id: string;
-  text: string;
-  sender: 'me' | 'other';
-  time: string;
-};
+type Props = {
+  selectedUser: User
+} 
 
-const mockMessages: Message[] = [
-  {
-    id: '1',
-    text: 'Hey there! How are you?',
-    sender: 'other',
-    time: '10:30 AM',
-  },
-  {
-    id: '2',
-    text: "I'm good, thanks! How about you?",
-    sender: 'me',
-    time: '10:32 AM',
-  },
-  {
-    id: '3',
-    text: 'Doing well! Just working on that project we discussed last week.',
-    sender: 'other',
-    time: '10:33 AM',
-  },
-  {
-    id: '4',
-    text: "Oh nice! How's it going so far?",
-    sender: 'me',
-    time: '10:34 AM',
-  },
-  {
-    id: '5',
-    text: "It's coming along great! I think we'll be able to finish it before the deadline.",
-    sender: 'other',
-    time: '10:36 AM',
-  },
-  {
-    id: '6',
-    text: "That's awesome news! Let me know if you need any help with it.",
-    sender: 'me',
-    time: '10:37 AM',
-  },
-];
-
-export const ConversationArea = () => {
+export const ConversationArea = ({selectedUser}: Props) => {
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Message[]>(mockMessages);
+  const {user} = useAuthStore()
+  const messagesMap = useMessageStore((state) => state.messages);
+  const messages = messagesMap[selectedUser.id] || [];
+  const addMessage = useMessageStore((state)=> state.addMessage)
+  
 
   const handleSendMessage = () => {
-    if (message.trim()) {
+    if (user?.id && selectedUser?.id && message.trim()) {
       const newMessage: Message = {
         id: Date.now().toString(),
         text: message,
-        sender: 'me',
+        owner: 'me',
+        sender: {id: user?.id},
+        reciever:{id: selectedUser?.id},
         time: new Date().toLocaleTimeString([], {
           hour: '2-digit',
           minute: '2-digit',
         }),
       };
-      setMessages([...messages, newMessage]);
+      addMessage(selectedUser.id, newMessage);
+      socket.emit('send-message', newMessage);
       setMessage('');
     }
   };
@@ -114,16 +83,16 @@ export const ConversationArea = () => {
 
       <ScrollArea className="flex-1 p-4 bg-gray-50 h-72">
         <div className="space-y-4">
-          {messages.map((msg) => (
+          {messages.map((msg: Message) => (
             <div
               key={msg.id}
               className={`flex ${
-                msg.sender === 'me' ? 'justify-end' : 'justify-start'
+                msg.owner === 'me' ? 'justify-end' : 'justify-start'
               }`}
             >
               <div
                 className={`max-w-[75%] rounded-lg px-4 py-2 ${
-                  msg.sender === 'me'
+                  msg.owner === 'me'
                     ? 'bg-purple-600 text-white rounded-br-none'
                     : 'bg-white shadow-sm rounded-bl-none'
                 }`}
@@ -131,7 +100,7 @@ export const ConversationArea = () => {
                 <p>{msg.text}</p>
                 <p
                   className={`text-xs mt-1 ${
-                    msg.sender === 'me' ? 'text-purple-100' : 'text-gray-500'
+                    msg.owner === 'me' ? 'text-purple-100' : 'text-gray-500'
                   }`}
                 >
                   {msg.time}

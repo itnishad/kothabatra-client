@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Search } from 'lucide-react';
 import { useUsersStore } from '@/store/usersStore';
 import { User } from '@/types';
+import { socket } from '@/config/socket';
 
 export const UsersList = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const {userList,selectedUser, setSelectedUser} = useUsersStore()
+  const {userList,selectedUser, setSelectedUser, addUser, deleteUser} = useUsersStore()
 
   const filteredUsers = userList.filter((user) =>
     user.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -16,6 +17,21 @@ export const UsersList = () => {
   const handleSelecteUser = (user: User) =>{
     setSelectedUser(user)
   }
+
+  useEffect(()=>{
+      const handleJoinUser = (user: User) => {
+        addUser(user)
+      }
+      const handleLeaveUser = (user: Pick<User, 'id' | 'email'>) => {
+        deleteUser(user.id)
+      }
+      socket.on('join-user', handleJoinUser);
+      socket.on('leave-user', handleLeaveUser)
+      return ()=>{
+        socket.removeListener('join-user', handleJoinUser)
+        socket.removeListener('leave-user', handleLeaveUser)
+      }
+    },[])
 
   return (
     <div className="w-80 border-r border-gray-200 flex flex-col">

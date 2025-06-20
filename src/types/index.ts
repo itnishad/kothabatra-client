@@ -12,10 +12,10 @@ export type Message = {
   text: string;
   owner: 'me' | 'other';
   sender: {
-    id: string
-  },
-  reciever: {
-    id: string
-  }
+    id: string;
+  };
+  reciever?: {
+    id: string;
+  };
   time: string;
 };
