@@ -1,3 +1,7 @@
+import { useState } from 'react';
+import { AxiosError } from 'axios';
+import { LogIn } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   createFileRoute,
   Link,
@@ -15,11 +19,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { LogIn } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAuthStore } from '@/store/authStore';
-import { useState } from 'react';
-import { AxiosError } from 'axios';
 
 export const Route = createFileRoute('/login')({
   component: RouteComponent,
@@ -127,7 +127,7 @@ function RouteComponent() {
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
                   <Link
-                    to="/#forgot-password"
+                    to="/"
                     className="text-sm font-medium text-chat-purple hover:text-chat-indigo"
                   >
                     Forgot your password?
@@ -171,14 +171,14 @@ function RouteComponent() {
             <p className="text-xs text-gray-600 text-center">
               By signing in, you agree to our{' '}
               <Link
-                to="/#terms"
+                to="/"
                 className="font-medium text-chat-purple hover:text-chat-indigo"
               >
                 Terms
               </Link>{' '}
               and{' '}
               <Link
-                to="/#privacy"
+                to="/"
                 className="font-medium text-chat-purple hover:text-chat-indigo"
               >
                 Privacy Policy

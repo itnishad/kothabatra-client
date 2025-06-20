@@ -112,7 +112,7 @@ export const ConversationArea = () => {
         </div>
       </div>
 
-      <ScrollArea className="flex-1 p-4 bg-gray-50">
+      <ScrollArea className="flex-1 p-4 bg-gray-50 h-72">
         <div className="space-y-4">
           {messages.map((msg) => (
             <div

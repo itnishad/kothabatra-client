@@ -2,8 +2,8 @@ import { ChatHeader } from '@/components/chat/ChatHeader';
 import { ConversationArea } from '@/components/chat/ConversationArea';
 import { UsersList } from '@/components/chat/UsersList';
 import { createFileRoute, redirect } from '@tanstack/react-router';
-// import { initSocket } from '@/config/socket';
-// import { useEffect } from 'react';
+import { socket } from '@/config/socket';
+import { useEffect } from 'react';
 
 export const Route = createFileRoute('/chat')({
   component: RouteComponent,
@@ -16,9 +16,11 @@ export const Route = createFileRoute('/chat')({
 });
 
 function RouteComponent() {
-  // useEffect(() => {
-  //   initSocket(accessToken);
-  // }, []);
+  useEffect(() => {
+    if(!socket.connected){
+      socket.connect()
+    }
+  }, []);
   return (
     <div className="h-screen flex flex-col">
       <ChatHeader />

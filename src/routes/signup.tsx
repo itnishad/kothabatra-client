@@ -1,3 +1,7 @@
+import { useState } from 'react';
+import { AxiosError } from 'axios';
+import { UserPlus } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   createFileRoute,
   Link,
@@ -15,11 +19,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { UserPlus } from 'lucide-react';
-import { toast } from 'sonner';
-import { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
-import { AxiosError } from 'axios';
 
 export const Route = createFileRoute('/signup')({
   component: RouteComponent,
@@ -207,14 +207,14 @@ function RouteComponent() {
                 >
                   I agree to the{' '}
                   <Link
-                    to="/#terms"
+                    to="/"
                     className="font-medium text-chat-purple hover:text-chat-indigo"
                   >
                     Terms of Service
                   </Link>{' '}
                   and{' '}
                   <Link
-                    to="/#privacy"
+                    to="/"
                     className="font-medium text-chat-purple hover:text-chat-indigo"
                   >
                     Privacy Policy
