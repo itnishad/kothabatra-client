@@ -1,50 +1,63 @@
-import React, { useState } from 'react';
-import { Paperclip, Send, Mic, Phone, Video } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { useMessageStore } from '@/store/messageStore';
-import { useAuthStore } from '@/store/authStore';
-import { Message, User } from '@/types';
-import { socket } from '@/config/socket';
+import React, { useEffect, useState } from "react";
+import { Paperclip, Send, Mic, Phone, Video } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { useMessageStore } from "@/store/messageStore";
+import { useAuthStore } from "@/store/authStore";
+import { Message, User } from "@/types";
+import { socket } from "@/config/socket";
+import { getMessages } from "@/services";
 
 type Props = {
-  selectedUser: User
-} 
+  selectedUser: User;
+};
 
-export const ConversationArea = ({selectedUser}: Props) => {
-  const [message, setMessage] = useState('');
-  const {user} = useAuthStore()
+export const ConversationArea = ({ selectedUser }: Props) => {
+  const [message, setMessage] = useState("");
+  const { user } = useAuthStore();
   const messagesMap = useMessageStore((state) => state.messages);
   const messages = messagesMap[selectedUser.id] || [];
-  const addMessage = useMessageStore((state)=> state.addMessage)
-  
+  const addMessage = useMessageStore((state) => state.addMessage);
+  const setMessages = useMessageStore((state)=> state.setMessages)
 
   const handleSendMessage = () => {
     if (user?.id && selectedUser?.id && message.trim()) {
       const newMessage: Message = {
         id: Date.now().toString(),
         text: message,
-        owner: 'me',
-        sender: {id: user?.id},
-        reciever:{id: selectedUser?.id},
+        owner: "me",
+        sender: { id: user?.id },
+        reciever: { id: selectedUser?.id },
         time: new Date().toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
+          hour: "2-digit",
+          minute: "2-digit",
         }),
       };
       addMessage(selectedUser.id, newMessage);
-      socket.emit('send-message', newMessage);
-      setMessage('');
+      socket.emit("send-message", newMessage);
+      setMessage("");
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
+
+  useEffect(() => {
+    if (user) {
+      const fetchMessages = async () => {
+        const allMessages = await getMessages(user.id, selectedUser.id);
+        console.log({allMessages})
+        setMessages(selectedUser.id, allMessages)
+      };
+
+      fetchMessages()
+    }
+  }, [selectedUser.id, setMessages, user]);
 
   return (
     <div className="flex-1 flex flex-col">
@@ -56,7 +69,7 @@ export const ConversationArea = ({selectedUser}: Props) => {
             className="w-10 h-10 rounded-full object-cover"
           />
           <div>
-            <p className="font-medium">John Doe</p>
+            <p className="font-medium">{selectedUser.name}</p>
             <p className="text-xs text-gray-500">Online</p>
           </div>
         </div>
@@ -87,20 +100,20 @@ export const ConversationArea = ({selectedUser}: Props) => {
             <div
               key={msg.id}
               className={`flex ${
-                msg.owner === 'me' ? 'justify-end' : 'justify-start'
+                msg.owner === "me" ? "justify-end" : "justify-start"
               }`}
             >
               <div
                 className={`max-w-[75%] rounded-lg px-4 py-2 ${
-                  msg.owner === 'me'
-                    ? 'bg-purple-600 text-white rounded-br-none'
-                    : 'bg-white shadow-sm rounded-bl-none'
+                  msg.owner === "me"
+                    ? "bg-purple-600 text-white rounded-br-none"
+                    : "bg-white shadow-sm rounded-bl-none"
                 }`}
               >
                 <p>{msg.text}</p>
                 <p
                   className={`text-xs mt-1 ${
-                    msg.owner === 'me' ? 'text-purple-100' : 'text-gray-500'
+                    msg.owner === "me" ? "text-purple-100" : "text-gray-500"
                   }`}
                 >
                   {msg.time}
