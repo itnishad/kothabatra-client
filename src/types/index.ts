@@ -1,4 +1,4 @@
-export * from './authTypes';
+export * from "./authTypes";
 
 export interface User {
   id: string;
@@ -10,7 +10,7 @@ export interface User {
 export type Message = {
   id: string;
   text: string;
-  owner: 'me' | 'other';
+  owner: "me" | "other";
   sender: {
     id: string;
   };

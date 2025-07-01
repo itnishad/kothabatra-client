@@ -31,7 +31,7 @@ export const UsersList = () => {
         socket.removeListener('join-user', handleJoinUser)
         socket.removeListener('leave-user', handleLeaveUser)
       }
-    },[])
+    },[addUser, deleteUser])
 
   return (
     <div className="w-80 border-r border-gray-200 flex flex-col">

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Paperclip, Send, Mic, Phone, Video } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,11 +6,20 @@ import { Button } from "@/components/ui/button";
 import { useMessageStore } from "@/store/messageStore";
 import { useAuthStore } from "@/store/authStore";
 import { Message, User } from "@/types";
+import { webRtcStore } from "@/store/webRtcStore";
 import { socket } from "@/config/socket";
 import { getMessages } from "@/services";
 
 type Props = {
   selectedUser: User;
+};
+
+const peerConfiguration = {
+  iceServers: [
+    {
+      urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"],
+    },
+  ],
 };
 
 export const ConversationArea = ({ selectedUser }: Props) => {
@@ -19,7 +28,112 @@ export const ConversationArea = ({ selectedUser }: Props) => {
   const messagesMap = useMessageStore((state) => state.messages);
   const messages = messagesMap[selectedUser.id] || [];
   const addMessage = useMessageStore((state) => state.addMessage);
-  const setMessages = useMessageStore((state)=> state.setMessages)
+  const setMessages = useMessageStore((state) => state.setMessages);
+  const { inCall, setInCall, setOffer, setAnswerUser, setOfferUser } =
+  webRtcStore();
+  
+  const ioOfferRef = useRef(false);
+  const rtcPeerObject = useRef<RTCPeerConnection>(null);
+  const localStream = useRef<MediaStream>(null);
+  const remoteStream = useRef<MediaStream>(null);
+
+  const myVideo = useRef<HTMLVideoElement>(null);
+  const remoteVideo = useRef<HTMLVideoElement>(null);
+
+  const createRtcPeerConnection = useCallback(
+    async (offer?: RTCSessionDescriptionInit) => {
+      if (!localStream.current && !remoteStream.current) {
+        return;
+      }
+      if(remoteVideo.current && remoteStream.current){
+        console.log("remote Audio Call");
+        remoteVideo.current.srcObject = remoteStream.current
+      }
+      const peerConnection = await new RTCPeerConnection(peerConfiguration);
+      remoteStream.current = new MediaStream();
+
+      localStream.current?.getTracks().forEach((track) => {
+        if (localStream.current)
+          peerConnection.addTrack(track, localStream.current);
+      });
+
+      peerConnection.onsignalingstatechange = (event) => {
+        console.log({ stateChange: event });
+        console.log(peerConnection.signalingState);
+      };
+
+      peerConnection.onicecandidate = (event) => {
+        console.log({user});
+        if (event.candidate) {
+          socket.emit("send-ice-candidate-to-signaling-server", {
+            iceCandidate: event.candidate,
+            user,
+            ioOffer: ioOfferRef,
+          });
+        }
+      };
+
+      peerConnection.ontrack = (event) => {
+        event.streams[0].getTracks().forEach((track) => {
+          remoteStream.current?.addTrack(track);
+          if(remoteVideo.current){
+            remoteVideo.current.srcObject = remoteStream.current
+          }
+          console.log("Here's an exciting moment... fingers cross");
+        });
+      };
+
+      if (offer) {
+        console.log("offer get")
+        await peerConnection.setRemoteDescription(offer);
+      }
+
+      rtcPeerObject.current = peerConnection;
+    },
+    [user]
+  );
+
+  const getMediaUser = async (
+    isVideo: boolean
+  ): Promise<MediaStream | undefined> => {
+    const config: MediaStreamConstraints = {
+      audio: true,
+      ...(isVideo && { video: true }),
+    };
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(config);
+      localStream.current = stream;
+
+      if (myVideo.current) {
+        myVideo.current.srcObject = stream;
+      }
+
+      return stream;
+    } catch (error) {
+      console.error("Error accessing media devices.", error);
+    }
+  };
+
+  const call = async (isVideo: boolean) => {
+    if (inCall) return;
+
+    await getMediaUser(true);
+    await createRtcPeerConnection();
+
+    try {
+      const offer = await rtcPeerObject.current?.createOffer();
+      if (!offer) return;
+      rtcPeerObject.current?.setLocalDescription(offer);
+      ioOfferRef.current = true
+      setInCall(true);
+      setOffer(offer);
+      setAnswerUser(selectedUser);
+      socket.emit("new-offer", { offer, selectedUser, user, isVideo });
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   const handleSendMessage = () => {
     if (user?.id && selectedUser?.id && message.trim()) {
@@ -47,15 +161,94 @@ export const ConversationArea = ({ selectedUser }: Props) => {
     }
   };
 
+  const answerOffer = useCallback(
+    async ({
+      offer,
+      offerUser,
+      isVideo,
+    }: {
+      offer: RTCSessionDescriptionInit;
+      offerUser: User;
+      isVideo: boolean;
+    }) => {
+      if (inCall || !user) return;
+      await getMediaUser(isVideo);
+      await createRtcPeerConnection(offer);
+      setInCall(true);
+      setOffer(offer);
+      setOfferUser(offerUser);
+      setAnswerUser(user);
+      const answer = await rtcPeerObject.current?.createAnswer();
+      if (!answer) return;
+      await rtcPeerObject.current?.setLocalDescription(answer);
+
+      const offerIceCandidate = await socket.emitWithAck("new-answer", {
+        answer,
+        offerUser,
+      });
+      offerIceCandidate.forEach((element: RTCIceCandidateInit) => {
+        rtcPeerObject.current?.addIceCandidate(element);
+      });
+    },
+    [
+      createRtcPeerConnection,
+      inCall,
+      setAnswerUser,
+      setInCall,
+      setOffer,
+      setOfferUser,
+      user,
+    ]
+  );
+
+  const addAnswer = useCallback(
+    async ({ answer }: { answer: RTCSessionDescriptionInit }) => {
+      await rtcPeerObject.current?.setRemoteDescription(answer);
+    },
+    []
+  );
+
+  const addNewIceCandidate = useCallback(
+    (iceCandidate: RTCIceCandidateInit) => {
+      console.log("answer")
+      console.log({iceCandidate})
+      rtcPeerObject.current?.addIceCandidate(iceCandidate);
+    },
+    []
+  );
+
+  useEffect(() => {
+    socket.on("receivedIceCandidateFromServer", addNewIceCandidate);
+    return () => {
+      socket.removeListener(
+        "receivedIceCandidateFromServer",
+        addNewIceCandidate
+      );
+    };
+  }, [addNewIceCandidate]);
+
+  useEffect(() => {
+    socket.on("newOfferAwaiting", answerOffer);
+    return () => {
+      socket.removeListener("newOfferAwaiting", answerOffer);
+    };
+  }, [answerOffer]);
+
+  useEffect(() => {
+    socket.on("answerResponse", addAnswer);
+    return () => {
+      socket.removeListener("answerResponse", addAnswer);
+    };
+  }, [addAnswer]);
+
   useEffect(() => {
     if (user) {
       const fetchMessages = async () => {
         const allMessages = await getMessages(user.id, selectedUser.id);
-        console.log({allMessages})
-        setMessages(selectedUser.id, allMessages)
+        setMessages(selectedUser.id, allMessages);
       };
 
-      fetchMessages()
+      fetchMessages();
     }
   }, [selectedUser.id, setMessages, user]);
 
@@ -78,16 +271,20 @@ export const ConversationArea = ({ selectedUser }: Props) => {
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full hover:bg-gray-100"
+            className="rounded-full cursor-pointer hover:bg-gray-100"
             title="Audio Call"
+            onClick={() => call(false)}
           >
             <Phone className="h-5 w-5 text-gray-600" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full hover:bg-gray-100"
+            className="rounded-full cursor-pointer hover:bg-gray-100"
             title="Video Call"
+            onClick={() => {
+              call(true);
+            }}
           >
             <Video className="h-5 w-5 text-gray-600" />
           </Button>
@@ -154,6 +351,10 @@ export const ConversationArea = ({ selectedUser }: Props) => {
             </Button>
           </div>
         </div>
+      </div>
+      <div className="flex gap-4">
+        <video ref={myVideo} width="320" height="240" controls autoPlay></video>
+        <video ref={remoteVideo} width="320" height="240" controls autoPlay></video>
       </div>
     </div>
   );
